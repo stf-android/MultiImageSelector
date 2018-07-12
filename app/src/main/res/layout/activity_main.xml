@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.cpsc.photos.MainActivity">
+
+    <TextView
+        android:id="@+id/base_title1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorAccent"
+        android:paddingLeft="5dp"
+        android:text="基本设置" />
+
+
+    <TextView
+        android:id="@+id/select_photo_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_below="@+id/base_title1"
+        android:layout_margin="10dp"
+        android:gravity="center"
+        android:text="选择照片：" />
+
+    <Spinner
+        android:id="@+id/select_photo_spinner"
+        android:layout_width="100dp"
+        android:layout_height="30dp"
+        android:layout_alignBottom="@+id/select_photo_tv"
+        android:layout_toRightOf="@+id/select_photo_tv" />
+
+
+    <TextView
+        android:id="@+id/select_photonum_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_below="@+id/select_photo_tv"
+        android:layout_margin="10dp"
+        android:gravity="center"
+        android:text="照片数目：" />
+
+    <Spinner
+        android:id="@+id/select_photonum_spinner"
+        android:layout_width="100dp"
+        android:layout_height="30dp"
+        android:layout_alignBottom="@+id/select_photonum_tv"
+        android:layout_toRightOf="@+id/select_photonum_tv" />
+
+    <TextView
+        android:id="@+id/select_camera_tv"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_below="@+id/select_photonum_tv"
+        android:layout_margin="10dp"
+        android:gravity="center"
+        android:text="相机显示：" />
+
+    <Spinner
+        android:id="@+id/select_camera_spinner"
+        android:layout_width="100dp"
+        android:layout_height="30dp"
+        android:layout_alignBottom="@+id/select_camera_tv"
+        android:layout_toRightOf="@+id/select_camera_tv" />
+
+    <TextView
+        android:id="@+id/select_start_tv"
+        android:layout_width="100dp"
+        android:layout_height="30dp"
+        android:layout_below="@+id/select_camera_tv"
+        android:layout_margin="10dp"
+        android:background="@color/colorAccent"
+        android:gravity="center"
+        android:text="拍   照" />
+
+
+    <TextView
+        android:id="@+id/base_title2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/select_start_tv"
+        android:background="@color/colorAccent"
+        android:paddingLeft="5dp"
+        android:text="结果" />
+
+    <GridView
+        android:id="@+id/select_photo_gridView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/base_title2"
+        android:layout_margin="5dp"
+        android:horizontalSpacing="2dp"
+        android:numColumns="3"
+        android:verticalSpacing="2dp">
+
+    </GridView>
+
+</RelativeLayout>
