@@ -131,3 +131,4 @@ private MultiImageSelector getMultiImageSelectorOrigin() {
 单选模式：只能拍照更换照片（默认选中该照片）。
 多选模式：拍照（默认选中最近几次拍的照片），可长按某张照片移除它。
 除拍照外其他操作最后点击“完成”即可。
+- 添加 水印且不设置水印内容时，显示当前拍照时间
