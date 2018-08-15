@@ -5,12 +5,14 @@
 #### 改进点
 - 兼容7.0以上拍照
 - 新增是否主动选择照片的功能
+- 动态设置照片水印
 
 #### 为何要改进
  - 7.0以后android 在拍照时返回的“uri”这块做了很大的改进
  - 有这样的奇葩需求：
  1.上传多张照片，具体多少张不确定，用户根据当时场景自己随意定。
  2.部分用户要求可以从“相册”里主动去选照片，部分用户要求不能从“相册”里选照片。（用户来自不同市区，开发时共用同一套模板，对于不同用户稍加修改项目模板，打算写一个开关出来，于是就诞生了是否主动选择照片的功能）
+ 3.加水印防止用户提前拍好照片，后期使用。
 
 #### 效果预览
 ![image.png](https://upload-images.jianshu.io/upload_images/5915124-26183ba4b4d7dd46.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
@@ -27,7 +29,7 @@
     compile 'com.zhy:base-rvadapter:3.0.3' //万能适配器
     compile 'com.zhy:base-adapter:3.0.3'  //万能适配器
     compile 'com.github.bumptech.glide:glide:3.7.0'
-    implementation 'com.github.stf-android:MultiImageSelector:1.0.0'  // 图片选择器
+    implementation 'com.github.stf-android:MultiImageSelector:1.0.1'  // 图片选择器
 ```
 - Manifest 配置
 ```
@@ -73,26 +75,40 @@
 ```
 - MultiImageSelector 的调用
 ```
+
 private void startCamera() {
-        Log.i("stf", "--mMode--->" + mMode);
-        MultiImageSelector origin = getMultiImageSelectorOrigin();
-        if (mMode) // 拍单张还是多张
-            origin.multi().start(this, mCoder); //多选 开始拍照
-        else
-            origin.single().start(this, mCoder); // 单选
+        MultiImageSelector mModeType = null;
+        if (mMode) {// 拍单张还是多张
+            mModeType = getMultiImageSelectorOrigin().multi();// 多选，开始拍照
+        } else {
+            mModeType = getMultiImageSelectorOrigin().single(); // 单选
+        }
+
+        String trim = waterMrakEdit.getText().toString().trim();
+        if (TextUtils.isEmpty(trim)) {
+            mModeType.start(this, mCoder);
+        } else {
+            WaterMarkBean waterMarkBean = mModeType.getWaterMarkBean(); // 设置水印的属性
+            waterMarkBean.setTextSize(28);
+            waterMarkBean.setColor("#d4237a");
+            waterMarkBean.setAntiAlias(true);
+            waterMarkBean.setAlpha(180);
+            waterMarkBean.setRotate(-30);
+            waterMarkBean.setMark(trim);
+            mModeType.setWaterMarkStyle(waterMarkBean).start(this, mCoder);
+        }
     }
 
 private MultiImageSelector getMultiImageSelectorOrigin() {
-        Log.i("stf", "--mSelectorPhoto--->" + mSelectorPhoto);
-        Log.i("stf", "--mPhotoNumSp--->" + mPhotoNumSp);
-        return MultiImageSelector.create()
+      return MultiImageSelector.create()
                 .showCamera(mShowCamera) // 是否显示相机. 默认为显示
                 .count(mPhotoNumSp) // 最大选择图片数量, 默认为9. 只有在选择模式为多选时有效
-                .selectPhoto(mSelectorPhoto) // 是否主动从相册中选择照片，新增
-                .origin(listPhotoPath); // 返回照片集合的路径
+                .selectPhoto(mSelectorPhoto) // 是否主动从相册中选择照片
+                .setWaterMarkPrivacy(mWaterMarkVis)  // 是否添加水印
+                .origin(listPhotoPath);//返回照片集合的路径
     }
 
-
+   
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
