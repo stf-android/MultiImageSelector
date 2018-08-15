@@ -8,9 +8,13 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+
+import me.nereo.multi_image_selector.bean.WaterMarkBean;
+import me.nereo.multi_image_selector.utils.Config;
 
 /**
  * 图片选择器
@@ -24,9 +28,12 @@ public class MultiImageSelector {
     private int mMaxCount = 9;
     private int mMode = MultiImageSelectorActivity.MODE_MULTI;
     private int mPhoto = MultiImageSelectorActivity.MODE_CHOICEPHOTO;//只能拍照得到照片
+    private int mWaterMark = MultiImageSelectorActivity.INVISWATERMark;
+    private String mWaterMarkMsg = MultiImageSelectorActivity.WaterMarkMsg;
 
     private ArrayList<String> mOriginData;
     private static MultiImageSelector sSelector;
+    private WaterMarkBean markBean;
 
 
     @Deprecated
@@ -73,20 +80,45 @@ public class MultiImageSelector {
     }
 
     public MultiImageSelector selectPhoto(Boolean flag) {
-
         if (flag) {
             mPhoto = MultiImageSelectorActivity.MODE_CHOICEPHOTO;
         } else {
             mPhoto = MultiImageSelectorActivity.MODE_NOCHOICEPHOTO;
         }
-
         return sSelector;
+    }
+
+    public MultiImageSelector setWaterMarkPrivacy(Boolean flag) {
+        if (flag) {
+            mWaterMark = MultiImageSelectorActivity.VISWATERMark;
+        } else {
+            mWaterMark = MultiImageSelectorActivity.INVISWATERMark;
+        }
+        return sSelector;
+    }
+
+    private MultiImageSelector setWaterMarkMsg(String msg) {
+        mWaterMarkMsg = msg;
+        return sSelector;
+    }
+
+    public MultiImageSelector setWaterMarkStyle(WaterMarkBean bean) {
+        if (markBean != null) {
+            markBean = null;
+        }
+        markBean = bean;
+        return sSelector;
+    }
+
+    public WaterMarkBean getWaterMarkBean() {
+        return new WaterMarkBean();
     }
 
     public MultiImageSelector origin(ArrayList<String> images) {
         mOriginData = images;
         return sSelector;
     }
+
 
     public void start(Activity activity, int requestCode) {
         final Context context = activity;
@@ -124,6 +156,12 @@ public class MultiImageSelector {
         }
         intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, mMode);
         intent.putExtra(MultiImageSelectorActivity.MODECHOICEPHOTO, mPhoto);
+        intent.putExtra(MultiImageSelectorActivity.isWaterMark, mWaterMark);
+        intent.putExtra(MultiImageSelectorActivity.WaterMarkMsg, mWaterMarkMsg);
+        if (markBean == null) {
+            markBean = Config.getWaterMarkBean();
+        }
+        intent.putExtra(MultiImageSelectorActivity.WaterMarkBenStr, markBean);
         return intent;
     }
 }

@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.cpsc.photos">
 
-
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -22,11 +21,12 @@
             </intent-filter>
         </activity>
 
-
-        <!-- authorities：是该项目的包名+provider
-      <!- grantUriPermissions：必须是true，表示授予 URI 临时访问权限-->
-        <!--exported：必须是false-->
-        <!--resource：中的@xml/file_paths是我们接下来要在资源文件目录下添加的文件 -->
+        <!--
+      authorities：是该项目的包名+provider
+      <!- grantUriPermissions：必须是true，表示授予 URI 临时访问权限
+        -->
+        <!-- exported：必须是false -->
+        <!-- resource：中的@xml/file_paths是我们接下来要在资源文件目录下添加的文件 -->
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -37,6 +37,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <activity android:name=".PhotoBigActivity"></activity>
     </application>
 
 </manifest>

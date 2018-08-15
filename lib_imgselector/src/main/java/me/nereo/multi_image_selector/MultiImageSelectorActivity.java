@@ -9,12 +9,17 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
+
+import me.nereo.multi_image_selector.bean.WaterMarkBean;
 
 /**
  * Multi image selector
@@ -36,6 +41,12 @@ public class MultiImageSelectorActivity extends AppCompatActivity
     // 不选择照片
     public static final int MODE_NOCHOICEPHOTO = 3;
 
+    // 显示水印
+    public static final int VISWATERMark = 4;
+
+    // 不显示水印
+    public static final int INVISWATERMark = 5;
+
     /**
      * Max image size，int，{@link #DEFAULT_IMAGE_SIZE} by default
      */
@@ -45,9 +56,21 @@ public class MultiImageSelectorActivity extends AppCompatActivity
      */
     public static final String EXTRA_SELECT_MODE = "select_count_mode";
     /**
-     *是否主动选择照片，默认的是主动选择
+     * 是否主动选择照片，默认的是主动选择
      */
     public static final String MODECHOICEPHOTO = "select_photo";
+
+    /***
+     * 是否显示水印
+     */
+    public static final String isWaterMark = "isWaterMark";
+    /***
+     * 水印内容
+     */
+    public static final String WaterMarkMsg = "WaterMarkMsg";
+
+    public static final String WaterMarkBenStr = "WaterMarkBenStr";
+
     /**
      * Whether show camera，true by default
      */
@@ -92,6 +115,9 @@ public class MultiImageSelectorActivity extends AppCompatActivity
         final int mode = intent.getIntExtra(EXTRA_SELECT_MODE, MODE_MULTI);
         final int mPhoto = intent.getIntExtra(MODECHOICEPHOTO, MODE_CHOICEPHOTO);
         final boolean isShow = intent.getBooleanExtra(EXTRA_SHOW_CAMERA, true);
+        String mWaterMarkMsg = intent.getStringExtra(WaterMarkMsg);
+        int mWaterMarkPrivacy = intent.getIntExtra(isWaterMark, INVISWATERMark);
+        WaterMarkBean markBean = (WaterMarkBean) intent.getSerializableExtra(WaterMarkBenStr);
         if (mode == MODE_MULTI && intent.hasExtra(EXTRA_DEFAULT_SELECTED_LIST)) {
             resultList = intent.getStringArrayListExtra(EXTRA_DEFAULT_SELECTED_LIST);
         }
@@ -117,13 +143,15 @@ public class MultiImageSelectorActivity extends AppCompatActivity
         } else {
             mSubmitButton.setVisibility(View.GONE);
         }
-
         if (savedInstanceState == null) {
             Bundle bundle = new Bundle();
             bundle.putInt(MultiImageSelectorFragment.EXTRA_SELECT_COUNT, mDefaultCount);
             bundle.putInt(MultiImageSelectorFragment.EXTRA_SELECT_MODE, mode);
             bundle.putInt(MultiImageSelectorFragment.MODECHOICEPHOTO, mPhoto);
+            bundle.putInt(MultiImageSelectorFragment.isWaterMark, mWaterMarkPrivacy);
+            bundle.putString(MultiImageSelectorFragment.WaterMarkMsg, mWaterMarkMsg);
             bundle.putBoolean(MultiImageSelectorFragment.EXTRA_SHOW_CAMERA, isShow);
+            bundle.putSerializable(MultiImageSelectorFragment.WaterMarkBenStr, markBean);
             bundle.putStringArrayList(MultiImageSelectorFragment.EXTRA_DEFAULT_SELECTED_LIST, resultList);
 
             getSupportFragmentManager().beginTransaction()
@@ -191,13 +219,14 @@ public class MultiImageSelectorActivity extends AppCompatActivity
     public void onCameraShot(File imageFile) {
         if (imageFile != null) {
             // notify system the image has change
-            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(imageFile)));
-
+            sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(imageFile)));// 扫描照片
             Intent data = new Intent();
             resultList.add(imageFile.getAbsolutePath());
             data.putStringArrayListExtra(EXTRA_RESULT, resultList);
             setResult(RESULT_OK, data);
             finish();
+        } else {
+            Toast.makeText(MultiImageSelectorActivity.this, "拍照失败，请重试", Toast.LENGTH_SHORT).show();
         }
     }
 }

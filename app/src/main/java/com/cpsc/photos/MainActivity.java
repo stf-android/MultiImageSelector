@@ -9,10 +9,12 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -28,12 +30,12 @@ import java.util.ArrayList;
 
 import me.nereo.multi_image_selector.MultiImageSelector;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
+import me.nereo.multi_image_selector.bean.WaterMarkBean;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Spinner photoSp;
-    private Spinner photoNumSp;
-    private Spinner cameraVisSp;
+    private Spinner cameraVisSp, waterMrakVisSp, photoSp, photoNumSp;
+    private EditText waterMrakEdit;
     private TextView openCameraTv;
     private GridView gridView;
     private int mPhotoNumSp = 1;
@@ -41,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private Boolean mShowCamera = true;
     private Boolean mMode = true; //多张照片 ,最多9张 ,false 单张
     private Boolean mSelectorPhoto = true;
+    private Boolean mWaterMarkVis = false;
     private final int mCoder = 1;
     private final int mCoders = 2;
     private final String positionStr = "position";
@@ -55,8 +58,6 @@ public class MainActivity extends AppCompatActivity {
         initSharedPre();
         initListener();
     }
-
-
 
 
     private void initListener() {
@@ -101,6 +102,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        setPhotoSp(waterMrakVisSp, 3, new onSpinnerListener() {
+            @Override
+            public void result(int position) {
+                if (position == 0) {
+                    mWaterMarkVis = false;
+                    waterMrakEdit.setVisibility(View.GONE);
+                } else {
+                    mWaterMarkVis = true;
+                    waterMrakEdit.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
         // 拍照
         openCameraTv.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -110,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         setGridViewData();
+
     }
 
 
@@ -129,6 +144,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String imgPath = (String) parent.getAdapter().getItem(position);
+                startActivity(new Intent(MainActivity.this, PhotoBigActivity.class).putExtra("imgPath", imgPath));
+            }
+        });
+
     }
 
     /**
@@ -137,27 +160,37 @@ public class MainActivity extends AppCompatActivity {
      * @remark 开始拍照
      */
     private void startCamera() {
-        Log.i("stf", "--mMode--->" + mMode);
-        MultiImageSelector origin = getMultiImageSelectorOrigin();
 
-        if (mMode) // 拍单张还是多张
-            origin.multi().start(this, mCoder); // 开始拍照
-        else
-            origin.single().start(this, mCoder);
+        MultiImageSelector mModeType = null;
+        if (mMode) {// 拍单张还是多张
+            mModeType = getMultiImageSelectorOrigin().multi();// 开始拍照
+        } else {
+            mModeType = getMultiImageSelectorOrigin().single();
+        }
 
+        String trim = waterMrakEdit.getText().toString().trim();
+        if (TextUtils.isEmpty(trim)) {
+            mModeType.start(this, mCoder);
+        } else {
+            WaterMarkBean waterMarkBean = mModeType.getWaterMarkBean(); // 设置水印的属性
+            waterMarkBean.setTextSize(28);
+            waterMarkBean.setColor("#d4237a");
+            waterMarkBean.setAntiAlias(true);
+            waterMarkBean.setAlpha(180);
+            waterMarkBean.setRotate(-30);
+            waterMarkBean.setMark(trim);
+            mModeType.setWaterMarkStyle(waterMarkBean).start(this, mCoder);
+        }
     }
 
 
     private MultiImageSelector getMultiImageSelectorOrigin() {
-
-        Log.i("stf", "--mSelectorPhoto--->" + mSelectorPhoto);
-        Log.i("stf", "--mPhotoNumSp--->" + mPhotoNumSp);
-
         return MultiImageSelector.create()
                 .showCamera(mShowCamera) // 是否显示相机. 默认为显示
                 .count(mPhotoNumSp) // 最大选择图片数量, 默认为9. 只有在选择模式为多选时有效
                 .selectPhoto(mSelectorPhoto) // 是否主动从相册中选择照片
-                .origin(listPhotoPath); // 返回照片集合的路径
+                .setWaterMarkPrivacy(mWaterMarkVis)  // 是否添加水印
+                .origin(listPhotoPath);//返回照片集合的路径
     }
 
     private void setPhotoSp(Spinner spinner, final int flag, final onSpinnerListener listener) {
@@ -168,16 +201,13 @@ public class MainActivity extends AppCompatActivity {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-
                 if (flag == 1) {
                     if (shared == null) {
                         shared = getSharedPreferences("SHARED", MODE_PRIVATE);
                     }
                     shared.edit().putInt(positionStr, position).commit();
                 }
-
                 listener.result(position);
-
             }
 
             @Override
@@ -205,6 +235,8 @@ public class MainActivity extends AppCompatActivity {
             items = new String[]{"1", "2", "3", "4", "5", "6", "7", "8", "9"};
         } else if (flag == 2) {
             items = new String[]{"是", "否"};
+        } else if (flag == 3) {
+            items = new String[]{"否", "是"};
         } else {
             items = new String[]{"未添加数据"};
         }
@@ -216,8 +248,10 @@ public class MainActivity extends AppCompatActivity {
         photoSp = findViewById(R.id.select_photo_spinner);
         photoNumSp = findViewById(R.id.select_photonum_spinner);
         cameraVisSp = findViewById(R.id.select_camera_spinner);
+        waterMrakVisSp = findViewById(R.id.select_camera_vis_spinner);
         openCameraTv = findViewById(R.id.select_start_tv);
         gridView = findViewById(R.id.select_photo_gridView);
+        waterMrakEdit = findViewById(R.id.select_camera_markedit);
     }
 
     private void initSharedPre() {

@@ -5,12 +5,17 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -33,21 +38,32 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import me.nereo.multi_image_selector.adapter.FolderAdapter;
 import me.nereo.multi_image_selector.adapter.ImageGridAdapter;
 import me.nereo.multi_image_selector.bean.Folder;
 import me.nereo.multi_image_selector.bean.Image;
+import me.nereo.multi_image_selector.bean.WaterMarkBean;
+import me.nereo.multi_image_selector.utils.Config;
 import me.nereo.multi_image_selector.utils.FileUtils;
 import me.nereo.multi_image_selector.utils.ScreenUtils;
 
@@ -76,6 +92,12 @@ public class MultiImageSelectorFragment extends Fragment {
     // 不选择照片
     public static final int MODE_NOCHOICEPHOTO = 3;
 
+    // 显示水印
+    public static final int VISWATERMark = 4;
+
+    // 不显示水印
+    public static final int INVISWATERMark = 5;
+
     /**
      * Max image size，int，
      */
@@ -90,6 +112,17 @@ public class MultiImageSelectorFragment extends Fragment {
      */
     public static final String MODECHOICEPHOTO = "select_photo";
 
+    /***
+     * 是否显示水印
+     */
+    public static final String isWaterMark = "isWaterMark";
+
+    /***
+     * 水印内容
+     */
+    public static final String WaterMarkMsg = "WaterMarkMsg";
+
+    public static final String WaterMarkBenStr = "WaterMarkBenStr";
     /**
      * Whether show camera，true by default
      */
@@ -122,6 +155,9 @@ public class MultiImageSelectorFragment extends Fragment {
     private boolean hasFolderGened = false;
 
     private File mTmpFile;
+
+    Handler handler = new Handler();
+    ExecutorService fixedThreadPool = Executors.newFixedThreadPool(4);
 
     @Override
     public void onAttach(Context context) {
@@ -320,7 +356,11 @@ public class MultiImageSelectorFragment extends Fragment {
             if (resultCode == Activity.RESULT_OK) {
                 if (mTmpFile != null) {
                     if (mCallback != null) {
-                        mCallback.onCameraShot(mTmpFile);
+                        if (selectWaterMarkPrivacy() == 4) {
+                            Picasso.with(getActivity()).load(mTmpFile).resize(406, 502).centerCrop().into(target);
+                        } else {
+                            mCallback.onCameraShot(mTmpFile);
+                        }
                     }
                 }
             } else {
@@ -523,6 +563,7 @@ public class MultiImageSelectorFragment extends Fragment {
                             image = new Image(path, name, dateTime);
                             images.add(image);
                         }
+
                         if (!hasFolderGened) {
                             // get all folder data
                             File folderFile = new File(path).getParentFile();
@@ -575,6 +616,7 @@ public class MultiImageSelectorFragment extends Fragment {
         return null;
     }
 
+
     private boolean showCamera() {
         return getArguments() == null || getArguments().getBoolean(EXTRA_SHOW_CAMERA, true);
     }
@@ -591,6 +633,156 @@ public class MultiImageSelectorFragment extends Fragment {
         return getArguments() == null ? MODE_CHOICEPHOTO : getArguments().getInt(MODECHOICEPHOTO);
     }
 
+    private int selectWaterMarkPrivacy() {
+        return getArguments() == null ? INVISWATERMark : getArguments().getInt(isWaterMark);
+    }
+
+    private String selectWaterMarkMsg() {
+        return getArguments() == null ? WaterMarkMsg : getArguments().getString(WaterMarkMsg);
+    }
+
+    private WaterMarkBean selectWaterMarkBen() {
+        return getArguments() == null ? Config.getWaterMarkBean() : (WaterMarkBean) (getArguments().getSerializable(WaterMarkBenStr));
+    }
+
+
+    /**
+     * @author stf
+     * @time 2018-07-16 10:45
+     * @remark picasso 根据path 生成照片并压缩
+     */
+
+    private Target target = new Target() {
+        @Override
+        public void onBitmapLoaded(final Bitmap bitmap, Picasso.LoadedFrom from) {
+            threadTool(new onThreadToolLinstener() {
+                private int bitmapFlag;
+
+                @Override
+                public void onInOhter() {
+                    try {
+                        Bitmap newBitmap = createWatermark(bitmap);
+                        FileOutputStream out = new FileOutputStream(mTmpFile);
+                        newBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                        out.flush();
+                        out.close();
+                        bitmapFlag = 1;
+                    } catch (Exception e) {
+                        e.fillInStackTrace();
+                        bitmapFlag = -1;
+                    }
+                }
+
+                @Override
+                public String onInMain() {
+                    if (bitmapFlag == 1) {
+                        mCallback.onCameraShot(mTmpFile);
+                    } else {
+                        mCallback.onCameraShot(null);
+                    }
+                    return null;
+                }
+            });
+        }
+
+        @Override
+        public void onBitmapFailed(Drawable errorDrawable) {
+        }
+
+        @Override
+        public void onPrepareLoad(Drawable placeHolderDrawable) {
+        }
+    };
+
+
+    private Bitmap createWatermark(Bitmap bitmap) {
+        int w = bitmap.getWidth();
+        int h = bitmap.getHeight();
+
+        Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bmp);
+        Paint p = new Paint();
+
+        WaterMarkBean markBean = selectWaterMarkBen();
+
+        // 水印颜色
+        String color = markBean.getColor();
+        if (color == null) {
+            p.setColor(Color.parseColor("#f4ea2a"));
+        } else {
+            try {
+                p.setColor(Color.parseColor(markBean.getColor()));
+            } catch (Exception e) {
+                e.fillInStackTrace();
+                p.setColor(Color.parseColor("#f4ea2a"));
+            }
+        }
+        // 水印字体大小
+        int textSzie = markBean.getTextSize();
+        p.setTextSize(textSzie);
+        //抗锯齿
+        Boolean antiAlias = markBean.getAntiAlias();
+        p.setAntiAlias(antiAlias);
+        // 透明度
+        int alpha = markBean.getAlpha();
+        p.setAlpha(alpha);
+        //绘制图像
+        canvas.drawBitmap(bitmap, 0, 0, p);
+        canvas.save();
+        // 选抓的角度
+        int rotate = markBean.getRotate();
+        canvas.rotate(rotate);
+        //绘制文字
+        canvas.drawText(markBean.getMark(), w / (w / 2), h / 2, p);
+        canvas.drawText(markBean.getMark(), w / (w / 2), h - 10, p);
+        canvas.restore();
+        return bmp;
+    }
+
+
+    private String getWaterMarkMsg() {
+        if (!selectWaterMarkMsg().equals(WaterMarkMsg)) {
+            return selectWaterMarkMsg();
+        } else {
+            SimpleDateFormat dff = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
+            String date = "";
+
+            try {
+                dff.setTimeZone(TimeZone.getTimeZone("GMT+08"));
+                date = dff.format(new Date());
+            } catch (Exception e) {
+                e.fillInStackTrace();
+                long currentTime = System.currentTimeMillis();
+                SimpleDateFormat formatter = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
+                date = formatter.format(currentTime);
+            }
+            return date;
+        }
+    }
+
+    public void threadTool(final onThreadToolLinstener todo) {
+
+        fixedThreadPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                todo.onInOhter();
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        todo.onInMain();
+                    }
+                });
+            }
+        });
+    }
+
+    public interface onThreadToolLinstener {
+        void onInOhter();
+
+        String onInMain();
+    }
+
 
     /**
      * Callback for host activity
@@ -604,4 +796,6 @@ public class MultiImageSelectorFragment extends Fragment {
 
         void onCameraShot(File imageFile);
     }
+
+
 }

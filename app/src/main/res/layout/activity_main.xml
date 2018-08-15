@@ -63,11 +63,40 @@
         android:layout_alignBottom="@+id/select_camera_tv"
         android:layout_toRightOf="@+id/select_camera_tv" />
 
+
+    <TextView
+        android:id="@+id/select_camera_vis"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_below="@+id/select_camera_tv"
+        android:layout_margin="10dp"
+        android:gravity="center"
+        android:text="水印显隐：" />
+
+    <Spinner
+        android:id="@+id/select_camera_vis_spinner"
+        android:layout_width="100dp"
+        android:layout_height="30dp"
+        android:layout_alignBottom="@+id/select_camera_vis"
+        android:layout_toRightOf="@+id/select_camera_vis" />
+
+    <EditText
+        android:id="@+id/select_camera_markedit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/select_camera_vis"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_toRightOf="@+id/select_camera_vis_spinner"
+        android:hint="请输入水印内容"
+        android:singleLine="true"
+        android:textSize="16sp" />
+
     <TextView
         android:id="@+id/select_start_tv"
         android:layout_width="100dp"
         android:layout_height="30dp"
-        android:layout_below="@+id/select_camera_tv"
+        android:layout_below="@+id/select_camera_vis"
         android:layout_margin="10dp"
         android:background="@color/colorAccent"
         android:gravity="center"
