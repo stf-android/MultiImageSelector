@@ -79,14 +79,14 @@
 private void startCamera() {
         MultiImageSelector mModeType = null;
         if (mMode) {// 拍单张还是多张
-            mModeType = getMultiImageSelectorOrigin().multi();// 多选，开始拍照
+            mModeType = getMultiImageSelectorOrigin().multi();// 多选
         } else {
             mModeType = getMultiImageSelectorOrigin().single(); // 单选
         }
 
         String trim = waterMrakEdit.getText().toString().trim();
         if (TextUtils.isEmpty(trim)) {
-            mModeType.start(this, mCoder);
+            mModeType.start(this, mCoder); // 开始拍照
         } else {
             WaterMarkBean waterMarkBean = mModeType.getWaterMarkBean(); // 设置水印的属性
             waterMarkBean.setTextSize(28);
@@ -95,7 +95,7 @@ private void startCamera() {
             waterMarkBean.setAlpha(180);
             waterMarkBean.setRotate(-30);
             waterMarkBean.setMark(trim);
-            mModeType.setWaterMarkStyle(waterMarkBean).start(this, mCoder);
+            mModeType.setWaterMarkStyle(waterMarkBean).start(this, mCoder); // 开始拍照
         }
     }
 
